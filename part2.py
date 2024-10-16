@@ -6,7 +6,8 @@ from load_train_data import load_data
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+# from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from scikeras.wrappers import KerasClassifier
 from sklearn.model_selection import RandomizedSearchCV
 
 class NegationHandler:
@@ -36,7 +37,7 @@ class NegationHandler:
                 i += 1
         return " ".join(result)
 
-def create_model(input_dim, units=64, dropout_rate=0.5, learning_rate=0.001):
+def create_model(input_dim, units=128, dropout_rate=0.5, learning_rate=0.001):
     model = Sequential([
         Dense(units, activation='relu', input_dim=input_dim),
         Dropout(dropout_rate),
@@ -72,9 +73,11 @@ def main():
         x_train_scaled, y_train_df['is_positive_sentiment'], test_size=0.2, random_state=42
     )
 
-    # Define the model
+    # Define the input dimension for the model
     input_dim = x_train.shape[1]
-    model = KerasClassifier(build_fn=lambda: create_model(input_dim), verbose=0)
+
+    # Use KerasClassifier with the model creation function
+    model = KerasClassifier(build_fn=create_model, input_dim=input_dim, verbose=0)
 
     # Define the parameter space
     param_distributions = {
@@ -88,6 +91,7 @@ def main():
     # Perform randomized search
     random_search = RandomizedSearchCV(estimator=model, param_distributions=param_distributions,
                                        n_iter=20, cv=3, verbose=1, scoring='roc_auc', n_jobs=-1)
+    
     random_search.fit(x_train, y_train)
 
     print(f"Best AUROC: {random_search.best_score_}")
@@ -104,3 +108,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
